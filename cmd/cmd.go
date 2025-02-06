@@ -53,9 +53,9 @@ type RootCommand struct {
 	Long    string
 
 	Version string
-	// todo: 添加自定义的help
+	// TODO: 添加自定义的help
 	Help string
-	// todo: 启动默认的config && 绑定到子命令的标志
+	// TODO: 启动默认的config && 绑定到子命令的标志
 	EnableConf bool
 
 	FlagSet Flags

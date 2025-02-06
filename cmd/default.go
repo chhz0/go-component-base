@@ -12,7 +12,7 @@ var cfgFile string
 
 // DefaultInitConfig 默认的初始化Viper配置
 func DefaultInitConfigFunc() {
-	// todo: 读取环境变量
+	// TODO: 读取环境变量
 
 	// Don't forget to read config either from cfgFile or from home directory!
 	if cfgFile != "" {
