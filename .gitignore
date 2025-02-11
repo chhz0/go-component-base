@@ -25,5 +25,7 @@ go.work.sum
 .env
 
 *.log
-.cache
-.vscode
+.cache/
+.vscode/
+.idea/
+.drop
