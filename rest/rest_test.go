@@ -1,56 +1,38 @@
 package rest
 
-import (
-	"net/http"
-	"testing"
-)
+import "testing"
 
-type Result struct {
+func Test_GetWithBaseURL(t *testing.T) {
+	SetBaseURL("http://localhost:8080")
+	resp, _ := Get("/ping/:id",
+		WithPathParams(map[string]string{"id": "123"}),
+		WithQueryParams(map[string]string{"details": "true"}),
+		WithRequestHeaders(map[string]string{"Authorization": "Bearer token"}),
+	)
+	t.Log(resp.Text())
 }
 
-// GET请求示例
-func Test_getExample(t *testing.T) {
-	resp, err := NewRequest().
-		MustMethod(http.MethodGet).
-		SetURL("http://127.0.0.1:8080/ping").
-		SetQuery(map[string]string{
-			"name":  "John",
-			"email": "john@example.com",
-		}).
-		Send()
-
-	if err != nil {
-		t.Log(err)
-	}
-
-	t.Log(string(resp.body))
+func Test_Get(t *testing.T) {
+	resp, _ := Get("http://localhost:8080/ping/")
+	t.Log(resp.Text())
 }
 
-// POST JSON示例
-func Test_postJSONExample(t *testing.T) {
-	data := map[string]interface{}{
-		"name":  "John",
-		"email": "john@example.com",
-	}
-
-	resp, err := NewRequest().
-		MustMethod(http.MethodPost).
-		SetURL("https://api.example.com/users").
-		SetJSONBody(data).
-		Send()
-
-	t.Log(resp, err)
+type User struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
-// 文件上传示例
-func Test_uploadExample(t *testing.T) {
-	resp, err := NewRequest().
-		MustMethod(http.MethodPost).
-		SetURL("https://api.example.com/upload").
-		AddMultipartFile("file", "/path/to/file.jpg").
-		SetFormBody(map[string]string{
-			"description": "My photo",
-		}).
-		Send()
-	t.Log(resp, err)
+func Test_Post(t *testing.T) {
+	SetBaseURL("http://localhost:8080")
+	resp, _ := Post("/user",
+		WithJSONBody(User{Name: "John", Email: "john@example.com"}),
+		WithRequestHeaders(map[string]string{
+			"X-Request-ID": "ncahdlai",
+		}),
+	)
+	t.Log(resp.Text())
+	var user User
+	err := resp.JSON(&user)
+	t.Log(err)
+	t.Log(user.Name)
 }
