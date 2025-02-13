@@ -1,8 +1,9 @@
-package cmd
+package cli
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -29,7 +30,8 @@ func DefaultInitConfigFunc() {
 		}
 
 		// Search config in home directory with name ".cobra" (without extension).
-		viper.AddConfigPath(home + "." + "simplecobra")
+		configPath := filepath.Join(home, ".simplecobra")
+		viper.AddConfigPath(configPath)
 		viper.SetConfigName(".cobra")
 	}
 

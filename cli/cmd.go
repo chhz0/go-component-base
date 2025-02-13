@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"context"
@@ -45,6 +45,10 @@ type Flags interface {
 
 	// LocalFlags 本地的标志
 	LocalFlagsAndRequired() (fs *pflag.FlagSet, required []string)
+
+	FlagSet(fs *pflag.FlagSet)
+
+	Required(flagName ...string)
 }
 
 type RootCommand struct {
@@ -53,13 +57,12 @@ type RootCommand struct {
 	Long    string
 
 	Version string
-	// TODO: 添加自定义的help
-	Help string
+	Help    string
 	// TODO: 启动默认的config && 绑定到子命令的标志
 	EnableConf bool
 
-	FlagSet Flags
-	Args    cobra.PositionalArgs
+	Flags Flags
+	Args  cobra.PositionalArgs
 
 	Initialize []func()
 	PreRunFunc func(ctx context.Context, args []string) error
@@ -82,11 +85,15 @@ func NewRootCmd(appName string, opts ...RootOption) *Executor {
 		o(rootCmd)
 	}
 
-	rootCmd.rootCobra = buildcobra(rootCmd, rootCmd.FlagSet)
+	rootCmd.rootCobra = buildcobra(rootCmd, rootCmd.Flags)
 	rootCmd.rootCobra.Args = rootCmd.Args
 
 	if rootCmd.Version != "" {
 		rootCmd.rootCobra.Version = rootCmd.Version
+	}
+
+	if rootCmd.Help != "" {
+		rootCmd.rootCobra.SetHelpTemplate(rootCmd.Help)
 	}
 
 	if rootCmd.EnableConf {
@@ -128,15 +135,21 @@ func WithVersion(version string) RootOption {
 	}
 }
 
+func WithHelp(help string) RootOption {
+	return func(r *RootCommand) {
+		r.Help = help
+	}
+}
+
 func WithConfig(enable bool) RootOption {
 	return func(r *RootCommand) {
 		r.EnableConf = enable
 	}
 }
 
-func WithFlagSets(flagSets Flags) RootOption {
+func WithFlagSets(flags Flags) RootOption {
 	return func(r *RootCommand) {
-		r.FlagSet = flagSets
+		r.Flags = flags
 	}
 }
 
@@ -176,6 +189,7 @@ func WithRunFunc(runF func(ctx context.Context, args []string) error) RootOption
 	}
 }
 
+// TODO
 func (rc *RootCommand) loadConfig() {
 	rc.rootCobra.Flags().StringVarP(&cfgFile, "config", "c", ".simplecobra.yaml", "config file (default is $HOME/.simplecobra/config.yaml)")
 	cobra.OnInitialize(DefaultInitConfigFunc)
@@ -246,12 +260,16 @@ func (rc *RootCommand) Commanders() []Commander {
 
 func (rc *RootCommand) PersistentFlagsAndRequired() (fs *pflag.FlagSet, required []string) {
 
-	return rc.FlagSet.PersistentFlagsAndRequired()
+	return rc.Flags.PersistentFlagsAndRequired()
 }
 
 func (rc *RootCommand) LocalFlagsAndRequired() (fs *pflag.FlagSet, required []string) {
 
 	return fs, required
+}
+
+func (rc *RootCommand) FlagSet(fs *pflag.Flag) {
+
 }
 
 type commandBuilder struct {
@@ -360,17 +378,17 @@ func use(cmder Commander) string {
 // printConfig 打印配置
 // copy from https://github.com/marmotedu/iam/blob/master/pkg/app/config.go
 func printConfig() {
-	if keys := viper.AllKeys(); len(keys) > 0 {
-		fmt.Printf("%v Configuration items:\n", color.GreenString("==>"))
-		table := uitable.New()
-		table.Separator = " "
-		table.MaxColWidth = 80
-		table.RightAlign(0)
-		for _, k := range keys {
-			table.AddRow(fmt.Sprintf("%s:", k), viper.Get(k))
-		}
-		fmt.Printf("%v\n", table)
+	keys := viper.AllKeys()
+	if len(keys) == 0 {
+		return
 	}
+	fmt.Printf("\n%v Configuration items:\n", color.GreenString("✔"))
+	table := uitable.New()
+	table.AddRow("KEY", "VALUE")
+	for _, k := range keys {
+		table.AddRow(k, viper.Get(k))
+	}
+	fmt.Printf("%v\n", table)
 }
 
 type Executor struct {

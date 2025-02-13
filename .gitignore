@@ -29,4 +29,5 @@ go.work.sum
 .vscode/
 .idea/
 .drop
+.template
 .demo
