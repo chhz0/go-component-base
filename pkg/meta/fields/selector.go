@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/chhz0/go-component-base/meta/selection"
+	"github.com/chhz0/go-component-base/pkg/meta/selection"
 )
 
 // Selector 是一个字段选择器，用以在一组数据中根据给定的字段和条件进行筛选和匹配

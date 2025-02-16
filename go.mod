@@ -3,6 +3,7 @@ module github.com/chhz0/go-component-base
 go 1.23.2
 
 require (
+	github.com/BurntSushi/toml v1.4.0
 	github.com/fatih/color v1.18.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/gosuri/uitable v0.0.4
@@ -13,6 +14,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	go.uber.org/zap v1.27.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
 )

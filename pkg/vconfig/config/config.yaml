@@ -1,0 +1,5 @@
+app: vconfig_config
+
+server:
+  host: config::127.1.1.1
+  port: 1112
