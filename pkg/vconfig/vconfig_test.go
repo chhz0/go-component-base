@@ -24,9 +24,9 @@ func Test_config(t *testing.T) {
 	// flags.String("server.host", "flag::127.0.0.1", "Server host")
 	// flags.String("server.port", "2222", "Server port")
 
-	t.Setenv("VCONFIG_APP", "vconfig_env")
-	t.Setenv("VCONFIG_SERVER_Host", "env::127.0.0.1")
-	t.Setenv("VCONFIG_SERVER_PORT", "3333")
+	// t.Setenv("VCONFIG_APP", "vconfig_env")
+	// t.Setenv("VCONFIG_SERVER_Host", "env::127.0.0.1")
+	// t.Setenv("VCONFIG_SERVER_PORT", "3333")
 
 	config := NewWith(
 		// 设置值
@@ -50,13 +50,20 @@ func Test_config(t *testing.T) {
 		// WithConfigType("yaml"),
 		// WithConfigPaths("./config", "."),
 
+		WithLocal(&Local{
+			ConfigName:  "config",
+			ConfigType:  "yaml",
+			ConfigPaths: []string{"./config"},
+		}),
+		WithDotEnv("dev", "."),
+
 		WithEnvPrefix("VCONFIG"),
 		// EnableDotEnv(true),
 		// EnableFlag(flags),
 	)
 
 	t.Log("all settings")
-	t.Log(config.AllSettings())
+	t.Log(config.MarshalToString("json"))
 
 	// var cfg *Config
 	// _ = config.Unmarshal(&cfg)
