@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +32,7 @@ import (
 
 var (
 	ErrConfigNotFound = errors.New("config file not found")
+	ErrDotEnvNotFound = errors.New("dotenv file not found")
 	ErrReaderIO       = errors.New("reader io error")
 	ErrInvalidType    = errors.New("invalid config type")
 	ErrRemoteConfig   = errors.New("remote config error")
@@ -64,11 +66,10 @@ type Options struct {
 	Sets     map[string]any
 	Defaults map[string]any
 
-	Local *Local
-
-	// 在 dotenv 中支持环境变量读取
+	Local  *Local
 	DotEnv *Local
-	Env    *Env
+
+	Env *Env
 
 	Flags []*pflag.FlagSet // flags
 
@@ -87,8 +88,8 @@ type Options struct {
 }
 
 type VConfig struct {
-	// TODO:  viper or vipers
 	v    *viper.Viper
+	vps  map[string]*viper.Viper
 	opts *Options
 	mu   sync.RWMutex
 }
@@ -112,6 +113,7 @@ func NewWith(optFuncs ...func(*Options)) *VConfig {
 
 	vc := &VConfig{
 		v:    viper.New(),
+		vps:  make(map[string]*viper.Viper),
 		opts: defaultOpts,
 	}
 
@@ -146,16 +148,14 @@ func (vc *VConfig) initialize() {
 		vc.setupEnv()
 	}
 
-	vc.setInRead("local")
 	// 加载本地配置文件
 	if err := vc.loadLocal(); err != nil && !errors.Is(err, ErrConfigNotFound) {
-		log.Printf("Warning: Error loading config file: %v", err)
+		log.Printf("Warning: Error loading local file: %v", err)
 	}
 
 	if vc.opts.DotEnv != nil {
-		vc.setInRead("dotenv")
-		if err := vc.loadLocal(); err != nil && !errors.Is(err, ErrConfigNotFound) {
-			log.Printf("Warning: Error loading config file: %v", err)
+		if err := vc.mergeLocal(); err != nil && !errors.Is(err, ErrConfigNotFound) {
+			log.Printf("Warning: Error loading local file: %v", err)
 		}
 	}
 
@@ -198,6 +198,7 @@ func (vc *VConfig) bindFlags() {
 }
 
 func (vc *VConfig) loadLocal() error {
+	vc.setInRead("local")
 	if err := vc.v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok && vc.opts.Local.ConfigIO != nil {
 			return vc.loadReaderIO()
@@ -206,6 +207,21 @@ func (vc *VConfig) loadLocal() error {
 	}
 
 	return nil
+}
+
+func (vc *VConfig) mergeLocal() error {
+	vc.setInRead("dotenv")
+	if err := vc.v.MergeInConfig(); err != nil {
+		if os.IsNotExist(err) {
+			return ErrDotEnvNotFound
+		}
+		return fmt.Errorf("dotenv file merge error: %v\n", err)
+	}
+	return nil
+}
+
+func (vc *VConfig) mergeFromViper(vp *viper.Viper) error {
+	return vc.v.MergeConfigMap(vp.AllSettings())
 }
 
 func (vc *VConfig) setInRead(in string) {
@@ -230,8 +246,8 @@ func (vc *VConfig) loadReaderIO() error {
 }
 
 func (vc *VConfig) loadRemote() error {
-	if vc.opts.Remote == nil || vc.opts.EnableRemote {
-		return nil
+	if vc.opts.Remote == nil {
+		return ErrRemoteConfig
 	}
 
 	remote := vc.opts.Remote
@@ -306,28 +322,22 @@ func (vc *VConfig) unmarshal() error {
 
 // Marshal 将vc.v.AllSettings()序列化为字符串
 // 目前支持：json, yaml, toml
-func (vc *VConfig) MarshalToString(marshalType string) string {
+func (vc *VConfig) MarshalToString(marshalType string) (string, error) {
 	m := vc.v.AllSettings()
 	var buf []byte
 	var err error
 	switch marshalType {
 	case "json":
 		buf, err = json.Marshal(m)
-		if err != nil {
-			panic(err)
-		}
 	case "yaml":
 		buf, err = yaml.Marshal(m)
-		if err != nil {
-			panic(err)
-		}
 	case "toml":
 		buf, err = toml.Marshal(m)
-		if err != nil {
-			panic(err)
-		}
 	}
-	return string(buf)
+	if err != nil {
+		return "", err
+	}
+	return string(buf), nil
 }
 func (vc *VConfig) setDefault() {
 	for k, v := range vc.opts.Defaults {

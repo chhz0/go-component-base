@@ -7,18 +7,20 @@ Go语言组件库，为快速开发提供基础组件，各组件设计上将接
 - `utils`: 工具类
 
 ## Components
-- cli: 命令行程序库
-- config：配置库
-- log：日志库
-- meta：元数据库
-- rest：restful http请求库
+- `cli`: 命令行程序库
+- `vconfig`：配置库
+- `log`：日志库
+- `meta`：元数据库
+- `rest`：restful http请求库
+- `metrics`: 监控指标库
+- `work`: 并发库
 
 ## Install
 `go get github.com/chhz0/go-component-base`
 
 ## Todo
 - [httpx]: 兼容gin, fasthttp, echo 等http框架
-- [corn]: 定时任务
-- [cache]: 缓存
-- [grace]: 优雅关闭
+- [corn]：定时任务
+- [cache]： 缓存
+- [grace]：优雅关闭
 - ...
